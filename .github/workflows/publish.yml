@@ -1,0 +1,100 @@
+# PyPI 배포 — Trusted Publisher(OIDC)
+#
+# ★API 토큰을 쓰지 않는다. PyPI 가 GitHub 에게 "이 저장소의 이 워크플로가 맞다" 를
+#   직접 확인하므로, 저장소에 비밀키를 넣어 둘 필요가 없다. 토큰이 새어 나갈 자리가
+#   아예 없어지는 것이 이 방식의 값어치다.
+#
+# 쓰기 전에 PyPI 쪽에 **한 번만** 등록해야 한다(아래 값 그대로):
+#     PyPI      https://pypi.org/manage/account/publishing/
+#     TestPyPI  https://test.pypi.org/manage/account/publishing/
+#         PyPI Project Name : kcsc-design-mcp
+#         Owner             : lhs1152-lgtm
+#         Repository name   : kcsc-design-mcp
+#         Workflow name     : publish.yml
+#         Environment name  : pypi   (TestPyPI 는 testpypi)
+#
+# 올리는 법
+#   · TestPyPI 로 시험      Actions 탭에서 이 워크플로를 골라 Run workflow → target=testpypi
+#   · 진짜 PyPI 로          릴리스를 만든다(태그 v0.2.0). 또는 Run workflow → target=pypi
+#
+# ★PyPI 는 올린 것을 지울 수 없다. 같은 판을 다시 올리지도 못한다.
+#   반드시 TestPyPI 로 먼저 올려 설치까지 해 보고 진짜에 올릴 것.
+
+name: publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 어디에 올릴까
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 빌드
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+
+      - name: 검사 — 메타데이터·README 렌더링
+        run: python -m twine check --strict dist/*
+
+      - name: ★들어가면 안 되는 것이 섞였는지
+        # 화이트리스트로 골라 담았으니 없어야 정상이다. 그래도 여기서 한 번 더 막는다 —
+        # PyPI 는 올린 것을 지울 수 없어서, 마지막 그물이 있는 편이 낫다.
+        run: |
+          python - <<'PY'
+          import glob, sys, tarfile, zipfile
+          나쁜말 = ("진행.md", "배포/", "__pycache__", "kcsc_key", ".zip")
+          문제 = []
+          for f in glob.glob("dist/*"):
+              이름 = (tarfile.open(f).getnames() if f.endswith(".tar.gz")
+                      else zipfile.ZipFile(f).namelist())
+              문제 += [f"{f}: {n}" for n in 이름 if any(b in n for b in 나쁜말)]
+          if 문제:
+              print("들어가면 안 되는 것이 있습니다:"); [print("  ", x) for x in 문제]; sys.exit(1)
+          print("깨끗합니다")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write        # ★OIDC — 이것이 토큰을 대신한다
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: build
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@release/v1
