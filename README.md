@@ -327,7 +327,7 @@ API 실측 사실과 그동안 부딪힌 함정은 [`docs/KCSC_API.md`](https://
 | --- | --- |
 | 코드 (`src/`) | **MIT** — [LICENSE](https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/LICENSE) |
 | 결정트리 (`flows/`) | **CC BY-SA 4.0** — [flows/LICENSE](https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/flows/LICENSE). 고쳐서 배포하면 같은 조건으로 공개해야 합니다 |
-| 기준 원문 | 국가건설기준센터(KCSC). 이 패키지는 **동봉하거나 재배포하지 않습니다** — 각자 자기 인증키로 조회합니다 |
+| 기준 원문 | 국가건설기준센터(KCSC). 이 패키지는 **동봉하거나 재배포하지 않습니다** — 각자 자기 인증키로 조회합니다. [NOTICE](https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/NOTICE) |
 
 Copyright (c) 2026 (주)하이드로코리아
 
