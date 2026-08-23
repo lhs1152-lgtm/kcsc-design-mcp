@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# 인증키는 저장소에 들어오면 안 된다. 이 도구는 환경변수로만 키를 읽는다.
+.env
+.env.*
+*key.txt
+*_key*
+
+# design_sheet 가 만드는 빈 검토표
+*.xlsx
+sheets/
+
+# 작업 중 생기는 것
+*.bak
+*.orig
+*.zip
+.kcsc-mcp/
+
+# 편집기
+.vscode/
+.idea/

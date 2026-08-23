@@ -1,0 +1,7 @@
+# 결정트리 YAML 이 CRLF 로 되어 있다. 이게 없으면 협업자마다 줄바꿈 diff 가 나서
+# 실제로 무엇이 바뀌었는지 안 보인다.
+* text=auto
+*.yaml text
+*.yml  text
+*.md   text
+*.py   text

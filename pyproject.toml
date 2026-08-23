@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kcsc-design-mcp"
+version = "0.2.0"
+description = "국가건설기준(KDS·KCS) 원문 조회와 설계 결정트리를 AI 대화창에서 바로 쓰는 MCP 서버"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "(주)하이드로코리아" }]
+keywords = [
+    "mcp", "model-context-protocol",
+    "kcsc", "kds", "kcs",
+    "건설기준", "구조설계", "강구조", "교량",
+    "korean-construction-standards",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Korean",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp>=1.2.0",
+    "beautifulsoup4>=4.12",
+    "pyyaml>=6.0",
+    "openpyxl>=3.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/lhs1152-lgtm/kcsc-design-mcp"
+Repository = "https://github.com/lhs1152-lgtm/kcsc-design-mcp"
+Issues = "https://github.com/lhs1152-lgtm/kcsc-design-mcp/issues"
+Changelog = "https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/CHANGELOG.md"
+
+[project.scripts]
+kcsc-design-mcp = "kcsc_mcp.__main__:main"
+
+# ★결정트리 35개(`flows/`)는 **휠에 넣지 않는다.**
+#   `pip install` 만 한 사람에게 아무 경고 없이 `✅ 설계자확정` 으로 뜨면 안 되기 때문이다.
+#   트리에는 KDS 가 값을 정하지 않은 자리에 만든 조직이 채택한 값이 들어 있다.
+#   사용자가 저장소에서 받아 자기 폴더에 **직접 넣는 행위**가 곧 "이 트리를 쓰기로 했다"는
+#   동의 절차가 된다. 휠에는 형식 견본 1개(`검증: 예제`)만 들어간다.
+[tool.hatch.build.targets.wheel]
+packages = ["src/kcsc_mcp"]
+
+# ★배포본에 들어갈 것만 화이트리스트로 지정한다.
+# PyPI 는 올린 것을 지울 수 없으므로, 넣을 것을 고르는 쪽이 뺄 것을 고르는 쪽보다 안전하다.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/flows",
+    "/docs/KCSC_API.md",
+    "/docs/설치안내.md",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]

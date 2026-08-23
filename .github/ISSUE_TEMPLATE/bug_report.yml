@@ -1,0 +1,42 @@
+name: 버그 신고
+description: 도구가 오류를 내거나 이상하게 동작할 때
+title: "[버그] "
+labels: ["버그"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **인증키(`KCSC_API_KEY`)를 붙이지 마십시오.**
+        로그·설정을 붙이실 때 키 값이 섞이지 않았는지 확인해 주십시오.
+  - type: input
+    id: tool
+    attributes:
+      label: 어느 도구인가요
+      placeholder: kcsc_read  ·  design_flow  ·  design_sheet …
+    validations: { required: true }
+  - type: textarea
+    id: input
+    attributes:
+      label: 무엇을 물으셨나요
+      description: 대화창에 친 말, 또는 도구에 넘긴 인자
+      placeholder: |
+        KDS 14 31 10 의 4.2.2 절 보여줘
+        (또는)  design_flow(member="압축부재", shape="원형강관", method="하중저항계수설계법")
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: 무엇을 기대하셨고, 실제로는 어떻게 됐나요
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes:
+      label: 환경
+      placeholder: Windows 11 · Python 3.12 · kcsc-design-mcp 0.2.0 · Claude Desktop
+    validations: { required: true }
+  - type: textarea
+    id: log
+    attributes:
+      label: 오류 메시지
+      description: 있으면 그대로 붙여 주십시오 (키가 섞이지 않았는지 확인!)
+      render: text

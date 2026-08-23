@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 설치가 안 돼요
+    url: https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/docs/설치안내.md
+    about: 설치 안내의 「안 될 때」 표를 먼저 보십시오. 그래도 안 되면 이슈를 열어 주세요.

@@ -1,0 +1,20 @@
+name: 질문
+description: 쓰는 법이 궁금하거나, 이렇게 하는 게 맞나 싶을 때
+title: "[질문] "
+labels: ["질문"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        설치 문제라면 [설치 안내](https://github.com/lhs1152-lgtm/kcsc-design-mcp/blob/main/docs/설치안내.md)
+        의 「안 될 때」 표를 먼저 보시면 빠를 수 있습니다.
+  - type: textarea
+    id: question
+    attributes:
+      label: 무엇이 궁금하신가요
+    validations: { required: true }
+  - type: textarea
+    id: tried
+    attributes:
+      label: 해 보신 것
+      description: 있으면 적어 주십시오. 없어도 괜찮습니다.

@@ -1,0 +1,54 @@
+name: 결정트리 오류 제보
+description: 트리의 조항번호가 틀렸거나, 흐름에 빠진 검토가 있을 때
+title: "[트리] "
+labels: ["결정트리"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        기계 검사는 **조항이 실재하는지**까지만 봅니다.
+        흐름이 실무와 맞는지는 사람이 봐야 알 수 있어서, 이런 제보가 가장 값집니다.
+        고치는 방법까지 아시면 좋지만, **틀렸다는 것만 알려 주셔도 충분합니다.**
+  - type: input
+    id: tree
+    attributes:
+      label: 어느 트리인가요
+      description: 파일 이름 또는 「부재 / 단면 / 설계법」
+      placeholder: 응력검토_원형강관_허용응력.yaml  (또는  응력검토 / 원형강관 / 허용응력설계법)
+    validations: { required: true }
+  - type: input
+    id: step
+    attributes:
+      label: 어느 단계인가요
+      description: 트리의 `단계` 값. 트리 전체에 대한 것이면 "전체"
+      placeholder: "4"  또는  2B  또는  전체
+    validations: { required: true }
+  - type: textarea
+    id: written
+    attributes:
+      label: 트리에 적힌 근거
+      description: 그 단계의 `근거` 를 그대로 붙여 주십시오
+      placeholder: KDS 14 30 10  4.8.1.8
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제로는 어떻게 되어야 하나요
+      description: |
+        맞는 조항번호를 아시면 적어 주십시오. 조항이 아니라 **흐름**의 문제라면
+        (예: 어떤 검토가 통째로 빠졌다, 순서가 거꾸로다) 그렇게 적어 주셔도 됩니다.
+      placeholder: |
+        KDS 14 30 25 4.2.1 이 맞습니다. 14 30 10 에는 그 내용이 없습니다.
+        (또는) 이 단계 뒤에 국부좌굴 검토가 있어야 하는데 빠져 있습니다.
+    validations: { required: true }
+  - type: input
+    id: edition
+    attributes:
+      label: 보신 기준의 판
+      description: 알고 계시면. `kcsc_version` 도구로도 확인할 수 있습니다
+      placeholder: KDS 14 30 10 (2024)
+  - type: textarea
+    id: extra
+    attributes:
+      label: 그 밖에
+      description: 실무 관행 · 다른 기준과의 관계 등 참고가 될 만한 것
