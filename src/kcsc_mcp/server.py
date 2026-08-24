@@ -54,8 +54,8 @@ def kcsc_search(query: str, code_type: str = "", limit: int = 20, domain: str = 
     query: 찾을 말. 띄어쓰기로 나눈 낱말이 **모두** 들어간 기준을 찾는다. (예: "강구조 부재")
     code_type: KDS·KCS·SMCS·LHCS·EXCS·KRCCS·KWCS·NHCS·KRACS 중 하나로 좁힌다. 빈 값이면 전체.
     limit: 최대 건수.
-    domain: 분야. **비우면 `교량` 이 기본**이다 (건축 기준이 딸려 오는 것을 막기 위해).
-            건축구조물이면 `건축` 이라고 지정한다. `전체` 로 두면 안 가린다.
+    domain: 분야. **비우면 `교량` 이 기본**이다 (다른 계열 기준이 딸려 오는 것을 막기 위해).
+            강구조(건축) 기준은 `강구조` 라고 지정한다(옛 이름 `건축` 도 받는다). `전체` 로 두면 안 가린다.
 
     ★분야를 밝히지 않으면 **교량으로 봅니다.** 결과에 분야를 표시하고, 기본 분야가 아닌 것은
       뒤로 미룹니다 — 교량 설계에 건축 기준(KDS 14 3x)을 쓰면 하중조합부터 달라집니다.
@@ -105,7 +105,7 @@ def kcsc_search(query: str, code_type: str = "", limit: int = 20, domain: str = 
     lines = [f"**'{query}'** — {len(hits)}건" + (f" (앞 {len(shown)}건만 표시)" if len(hits) > len(shown) else "")]
     if not show_all:
         lines.append(f"*분야 기본값 **{dom}** — 다른 분야는 뒤에 놓았습니다. "
-                     f"건축구조물이면 `domain='건축'`, 안 가리려면 `domain='전체'`*")
+                     f"강구조 기준은 `domain='강구조'`, 안 가리려면 `domain='전체'`*")
     lines += ["", "| 분야 | 종류 | 코드 | 이름 | 버전 | 개정일 |", "| --- | --- | --- | --- | --- | --- |"]
     for e in shown:
         mark = "✅" if e["_분야"] == dom else "· "
@@ -461,8 +461,11 @@ _NO_TREE = (
 def _domain_banner(domain: str, method: str) -> str:
     return (f"> ℹ️ **분야를 밝히지 않아 `{domain}` 으로 봤습니다** (기본값). "
             f"그래서 설계법은 `{method}` 입니다.\n"
-            "> **건축구조물이면 `domain='건축'` 을 지정하세요** — 교량과 건축은 기준 계열이\n"
-            "> 통째로 다릅니다 (교량 KDS 24 14 31 / 건축 KDS 14 31 10). 하중조합부터 다릅니다.")
+            "> **강구조(건축) 기준으로 보려면 `domain='강구조'` 를 지정하세요** — 교량(KDS 24 14 3x)과\n"
+            "> 강구조(KDS 14 3x)는 **설계법 계열과 하중조합이 다릅니다.**\n"
+            "> 다만 **부재 산정식은 교량이 강구조 기준을 준용하는 경우가 있습니다** — 예: KDS 24 14 31\n"
+            "> 4.1.4.2 가 압축부재를 KDS 14 31 10 (4.2) 로 넘깁니다. 조건에 맞는 트리가 없더라도\n"
+            "> **진입 트리(`강교 부재 / 전체`)나 `design_map` 으로 이어지는 길이 있는지 보십시오.**")
 
 
 def _pick(member: str, shape: str, method: str,
@@ -470,7 +473,7 @@ def _pick(member: str, shape: str, method: str,
     """트리 하나를 고른다. → (트리, 오류문, 알림).
 
     ★분야를 밝히지 않으면 **교량**으로 본다.
-      건축 기준이 딸려 오는 것을 막기 위한 기본값이다. 설계법을 안 주면 분야의 기본
+      다른 계열 기준이 딸려 오는 것을 막기 위한 기본값이다. 설계법을 안 주면 분야의 기본
       설계법을 쓰고, **그 설계법 트리가 없으면 다른 설계법으로 갈아타지 않고 없다고 답한다.**
     """
     if not (member or "").strip():
@@ -495,7 +498,11 @@ def _pick(member: str, shape: str, method: str,
                 head += f"\n{banner}\n"
             return None, (head + f"\n`{member}` 로 있는 트리:\n{opts}\n\n"
                           "★분야·설계법이 다르면 **다른 트리가 필요합니다.** 없는 것을 있는 것처럼\n"
-                          "내주지 않습니다. 새로 만들려면 `design_template` 로 뼈대를 받으세요."), ""
+                          "내주지 않습니다.\n"
+                          "다만 **상위 트리가 그 조건을 다른 트리로 넘기는 경우가 있습니다** — 예를 들어\n"
+                          "교량 한계상태설계법의 압축부재는 진입 트리가 KDS 14 31 10 갈래로 넘깁니다.\n"
+                          "`design_map()` 으로 이어지는 길을 먼저 확인하고, 그래도 없으면\n"
+                          "`design_template` 로 뼈대를 받아 새로 만드세요."), ""
         return None, f"조건에 맞는 트리가 없습니다 ({member} / {shape or '-'} / {method or '-'}).\n\n{_NO_TREE}", ""
     if len(hits) > 1:
         opts = "\n".join(f"  · {t['부재']} / {t.get('단면')} / {t.get('설계법')}" for t in hits)

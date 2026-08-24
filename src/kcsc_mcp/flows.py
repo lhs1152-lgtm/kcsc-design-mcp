@@ -275,8 +275,12 @@ def resolve_domain(domain: str = "") -> str:
     d = _norm(domain)
     if not d:
         return config.default_domain()
-    if "건축" in d:
-        return "건축"
+    # 옛 이름(건축)으로 물어도 받아 준다 — 이미 그렇게 쓰던 곳이 있다.
+    for 옛, 지금 in config.DOMAIN_ALIASES.items():
+        if 옛 in d:
+            return 지금
+    if "강구조" in d:
+        return "강구조"
     if "교량" in d or "교" == d:
         return "교량"
     return domain.strip()
