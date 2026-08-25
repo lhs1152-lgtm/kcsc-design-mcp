@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import __version__, audit as auditmod, client, config, doc as docmod, flows, sheet
+from . import __version__, audit as auditmod, client, config, doc as docmod, flows
 from .render import truncate
 
 # MCP SDK 2.0 에서 `FastMCP` 가 `MCPServer` 로 옮겨졌다. 데코레이터 API 는 같다.
@@ -27,15 +27,26 @@ except ImportError:  # pragma: no cover - mcp 1.x
 
 _SAFETY = (
     "\n\n---\n"
-    "> 위는 국가건설기준 **원문 인용**입니다. 수식·기호는 원문이 이미지라 〔그림〕 으로 표시되며, "
-    "실제 식과 값은 원문에서 확인해야 합니다. **최종판단은 설계자가 합니다.**"
+    "> 위는 국가건설기준 **원문 인용**입니다. 수식·기호는 원문이 이미지라 〔그림〕 으로 "
+    "표시되거나 **텍스트로 옮겨 적은 것**입니다. 실제 식과 값은 원문에서 확인해야 합니다. "
+    "**최종판단은 설계자가 합니다.**"
 )
 
+#: 〔그림〕 이 **남아 있을 때** — 식을 글자로 못 준 자리가 있다.
 _FORMULA_NOTE = (
-    "\n\n> ⚠️ 이 절의 **수식은 원문이 이미지**라 위 본문에 `〔그림 N〕` 으로만 나옵니다.\n"
+    "\n\n> ⚠️ 이 절의 수식 일부는 원문이 이미지라 위 본문에 `〔그림 N〕` 으로만 나옵니다.\n"
     "> **식이 필요하면 `kcsc_formula` 로 그림을 그대로 받으세요** — 번호가 같습니다.\n"
     "> 그림을 안 보고 계산하면 그 식은 원문이 아니라 **기억에서 나온 것**입니다. "
     "그 경우 사실을 밝히고 `kcsc_audit` 으로 인용을 검증하세요."
+)
+
+#: 〔그림〕 이 **하나도 안 남았을 때** — 식이 전부 글자로 들어갔다.
+#  그래도 "원문 그대로"가 아니라 **옮겨 적은 것**이라는 사실은 반드시 밝힌다.
+#  틀린 식이 조용히 지나가는 것이 이 도구가 가장 피해야 할 실패다.
+_FORMULA_NOTE_TEXT = (
+    "\n\n> 이 절의 수식은 원문이 이미지라, 위 본문의 식은 **그림을 텍스트로 옮겨 적은 것**입니다.\n"
+    "> 값을 넣어 계산하기 전에 `kcsc_formula` 로 **원문 그림과 대조**하십시오. "
+    "`⟨?⟩` 표시가 붙은 식은 판독이 확실하지 않다는 뜻입니다."
 )
 
 
@@ -191,7 +202,7 @@ def kcsc_read(code: str, section: str = "", code_type: str = "", max_chars: int 
         head += f"\n\n**조회 범위: {sec} 절**"
     text = head + "\n\n" + body
     if saw_formula:
-        text += _FORMULA_NOTE
+        text += _FORMULA_NOTE if "〔그림" in text else _FORMULA_NOTE_TEXT
     text += _SAFETY
 
     limit = max_chars if max_chars and max_chars > 0 else config.max_chars()
@@ -529,7 +540,7 @@ def design_flows() -> str:
                      f"{mark} {v} | {'동봉 예제' if t.get('_동봉') else '사용자'} |")
     lines += ["",
               f"사용자 트리 폴더: `{config.flows_dir()}`",
-              "→ 흐름은 `design_flow`, 빈 엑셀은 `design_sheet`, 새 트리 뼈대는 `design_template`.",
+              "→ 흐름은 `design_flow`, 새 트리 뼈대는 `design_template`.",
               "",
               f"> ⚠️ `검증` 이 `{flows.VERIFY_OK}` 이 아닌 트리는 설계자 확정 전입니다. 흐름·엑셀에 경고가 붙습니다."]
     return "\n".join(lines)
@@ -600,40 +611,6 @@ def design_flow(member: str, shape: str = "", method: str = "", domain: str = ""
     return truncate(text, config.max_chars(), "`with_source=false` 로 흐름만 보거나 `excerpt_chars` 를 줄이세요.")
 
 
-@mcp.tool()
-def design_sheet(member: str, shape: str = "", method: str = "", domain: str = "",
-                 out_path: str = "") -> str:
-    """**빈 단면검토 엑셀**을 만들고 파일 경로를 낸다.
-
-    member·shape·method: `design_flow` 와 같다. 설계법이 애매하면 되묻는다.
-    out_path: 저장 위치. 비우면 `~/.kcsc-mcp/sheets/` 에 만든다.
-
-    ★만드는 것은 **빈 템플릿**입니다 — 입력 셀·검토 단계·근거 조항·"식이 있는 원문 위치"까지.
-      **계산식과 값은 넣지 않습니다.** 수식은 원문이 이미지이고, 넣는 순간 이 도구가
-      구조계산을 대행하는 것이 됩니다. 값·계산·판정은 설계자가 합니다.
-    """
-    t, err, banner = _pick(member, shape, method, domain)
-    if err:
-        return err
-    path = out_path.strip() or str(sheet.default_dir() /
-                                   (sheet.safe_name(str(t.get("부재")), str(t.get("단면"))) + "_단면검토.xlsx"))
-    try:
-        saved = sheet.blank_excel(t, path)
-    except OSError as e:
-        return _err(Exception(f"엑셀을 저장하지 못했습니다: {e}"))
-    v = str(t.get("검증") or "draft")
-    out = [f"빈 단면검토 서식을 만들었습니다.", "", f"**{saved}**", "",
-           f"- 트리: {t.get('부재')} / {t.get('단면')} / {t.get('설계법')}",
-           f"- 근거: {t.get('근거')}",
-           f"- 검증: {v}"]
-    w = flows.verify_warning(t) or flows.stamp_line(t)
-    if w:
-        out += ["", w]
-    if banner:
-        out += ["", banner]
-    out += ["", "> 입력 셀(연노랑)과 산출 셀(연회색)은 **비어 있습니다.** 계산식은 넣지 않았습니다 — "
-            "실제 식은 근거 조항 원문에서 확인해 설계자가 넣습니다."]
-    return "\n".join(out)
 
 
 @mcp.tool()
@@ -763,7 +740,7 @@ def design_template(member: str, shape: str, method: str = "") -> str:
     body = flows.template(member, shape, m)
     return (f"```yaml\n{body}```\n\n"
             f"1. 위 뼈대를 채웁니다. **근거는 실재하는 절·표**로 적습니다.\n"
-            f"2. `{config.flows_dir() / (sheet.safe_name(member, shape) + '.yaml')}` 로 저장합니다.\n"
+            f"2. `{config.flows_dir() / (flows.safe_name(member, shape) + '.yaml')}` 로 저장합니다.\n"
             f"3. `design_validate(path=...)` 로 검사합니다 — 근거 조항이 실재하는지 확인합니다.\n"
             f"4. 설계자가 확인하면 `검증: {flows.VERIFY_OK}` 으로 올립니다. 그 전엔 경고가 붙습니다.\n\n"
             f"> ★설계법을 확인하세요. 지금 `{m}` 로 채워 두었습니다. "

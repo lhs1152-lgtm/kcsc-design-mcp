@@ -22,8 +22,6 @@ Claude Desktop·Claude Code·Cursor 등 MCP 를 쓰는 어떤 도구에서도 �
   그림을 안 보고 계산하면 그 식은 원문이 아니라 **AI의 기억에서 나온 것**이고,
   맞을 때도 틀릴 때도 있는데 **출력만 봐서는 구분되지 않습니다.**
   → 그 경우 `kcsc_audit` 으로 인용을 검증하고 그 사실을 밝히세요.
-- 만드는 엑셀은 **빈 템플릿**입니다. 계산식을 넣지 않습니다 — 원문이 이미지라 식을
-  알 수 없고, 모르는 식을 넣으면 그게 사고입니다.
 - **동봉된 결정트리는 검증된 설계도서가 아닙니다.** 검토 순서와 근거 조항일 뿐이고,
   KDS 가 값을 정하지 않은 자리에는 **만든 조직이 채택한 값**이 들어 있습니다.
   자기 조직 기준으로 바꿔 쓰셔야 하고, 그 판단의 책임은 쓰는 설계자에게 있습니다.
@@ -33,11 +31,67 @@ Claude Desktop·Claude Code·Cursor 등 MCP 를 쓰는 어떤 도구에서도 �
 
 ## 설치
 
-인증키가 먼저 필요합니다 — 국가건설기준센터 <https://kcsc.re.kr> 에서 OpenAPI 를 신청합니다.
+MCP 서버를 처음 붙이시는 분도 따라 할 수 있도록 하나씩 적었습니다.
+**준비물은 둘뿐입니다 — 인증키와 `uv`.**
 
-### Claude Desktop / Claude Code
+### 1단계 · 인증키 받기
 
-`claude_desktop_config.json` (또는 `.mcp.json`) 에 아래 한 덩어리를 넣습니다.
+국가건설기준센터 <https://kcsc.re.kr> 에서 **OpenAPI 를 신청**합니다.
+이 서버는 자기 키로 KCSC 에 직접 물어보는 구조라, 키가 없으면 아무것도 못 합니다.
+발급까지 시간이 걸리니 먼저 신청해 두시는 편이 좋습니다.
+
+### 2단계 · `uv` 깔기
+
+`uv` 는 파이썬 도구를 **알아서 내려받아 실행해 주는 프로그램**입니다.
+이것만 있으면 이 서버를 따로 설치하지 않아도 됩니다(`uvx` 가 알아서 받아 옵니다).
+
+이미 있는지부터 확인하십시오. 판 번호가 찍히면 이 단계는 건너뜁니다.
+
+```bash
+uv --version
+```
+
+`command not found` · `'uv'은(는) ... 인식되지 않습니다` 가 나오면 아래 중 **하나**를 고릅니다.
+
+**Windows** (PowerShell 을 열고)
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**macOS · Linux** (터미널에서)
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**파이썬이 이미 깔려 있다면** — 어느 환경이든 이 한 줄로도 됩니다.
+
+```bash
+pip install uv
+```
+
+이미 쓰는 꾸러미 관리자가 있으면 그것을 쓰셔도 됩니다 —
+macOS 는 `brew install uv`, Windows 는 `winget install --id=astral-sh.uv -e`.
+
+★**깔고 나면 터미널을 껐다 새로 여십시오.** 설치 프로그램이 PATH 를 고치는데,
+이미 열려 있던 창은 예전 PATH 를 그대로 들고 있어 방금 깐 `uv` 를 못 찾습니다.
+새 창에서 `uv --version` 이 찍히면 됩니다.
+
+> `uv` 를 깔고 싶지 않으시면 아래 **「`uv` 없이 쓰기」** 로 가십시오. 그 길도 됩니다.
+
+### 3단계 · 쓰는 도구에 등록하기
+
+**Claude Code** — 명령 한 줄이면 끝납니다.
+
+```bash
+claude mcp add kcsc --env KCSC_API_KEY=발급받은_키 -- uvx kcsc-design-mcp
+```
+
+`--` 뒤가 서버를 띄우는 명령이고, 그 앞은 Claude Code 에게 주는 옵션입니다.
+잘 붙었는지는 `claude mcp list` 로 봅니다(`✔ Connected` 이면 된 것입니다).
+
+**Claude Desktop · Cursor 등** — 설정 파일에 아래 한 덩어리를 넣습니다.
 
 ```json
 {
@@ -51,17 +105,72 @@ Claude Desktop·Claude Code·Cursor 등 MCP 를 쓰는 어떤 도구에서도 �
 }
 ```
 
-`uvx` 가 없으면 [uv](https://docs.astral.sh/uv/) 를 먼저 설치합니다. 별도 설치 과정은 없습니다.
+설정 파일 자리 —
 
-설정 파일 위치 — Claude Desktop(Windows): `%APPDATA%\Claude\claude_desktop_config.json`,
-Claude Code: 프로젝트의 `.mcp.json`. 넣은 뒤 앱을 다시 켜면 도구 14개가 잡힙니다.
+| | 자리 |
+| --- | --- |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code (프로젝트별) | 프로젝트 폴더의 `.mcp.json` |
 
-### 소스에서 바로 쓰기
+파일이 없으면 **새로 만들어** 위 내용을 그대로 넣으시면 됩니다.
+파일이 **이미 있고 `mcpServers` 가 들어 있다면**, 바깥 괄호를 또 만들지 말고
+`"kcsc": { ... }` 한 덩어리만 그 안에 넣으십시오 — 그리고 **앞 항목 끝에 쉼표**를 찍으십시오.
+JSON 에서 제일 흔한 실수가 이 쉼표입니다(빠뜨려도, 마지막에 하나 더 붙여도 파일 전체가 무시됩니다).
+
+### 4단계 · 되는지 확인
+
+앱을 **완전히 껐다 다시 켭니다**(창만 닫으면 안 되고 프로그램을 끝내야 합니다).
+그다음 대화창에 이렇게 물어보십시오.
+
+```
+KDS 14 31 10 목차 보여줘
+```
+
+목차가 나오면 된 것입니다. 도구 목록에는 **13개**가 잡힙니다.
+
+### `uv` 없이 쓰기
+
+`pip` 만으로도 됩니다. 파이썬 **3.10 이상**이 필요합니다.
+
+```bash
+pip install kcsc-design-mcp
+```
+
+그다음 설정에서 `command` 를 파이썬으로 바꿉니다.
+
+```json
+{
+  "mcpServers": {
+    "kcsc": {
+      "command": "python",
+      "args": ["-m", "kcsc_mcp"],
+      "env": { "KCSC_API_KEY": "발급받은_키" }
+    }
+  }
+}
+```
+
+★한 컴퓨터에 파이썬이 여러 개 깔려 있으면 `python` 이 **엉뚱한 것**을 가리켜
+"모듈이 없다"는 말이 나옵니다. 그럴 때는 전체 경로를 적으십시오.
+경로는 `where python` (Windows) · `which python3` (macOS·Linux) 로 확인합니다.
+
+### 소스에서 바로 쓰기 (직접 고쳐 쓰실 분)
 
 ```bash
 pip install -e .
 KCSC_API_KEY=발급받은_키 python -m kcsc_mcp
 ```
+
+### 잘 안 될 때
+
+| 증상 | 까닭 | 할 일 |
+| --- | --- | --- |
+| 도구가 아예 안 보인다 | 앱을 다시 켜지 않았다 | 프로그램을 완전히 끝냈다가 켠다 |
+| `uvx` 를 못 찾는다고 한다 | PATH 가 아직 예전 것이다 | 터미널·앱을 새로 연다. 그래도 안 되면 `uv --version` 부터 확인 |
+| 설정을 넣었는데 아무 일도 없다 | JSON 이 깨졌다 | 쉼표·괄호를 본다. 파일 전체가 통째로 무시된 것이다 |
+| 도구는 잡히는데 부를 때마다 실패한다 | 인증키 문제 | 키를 다시 확인한다. `KCSC_API_KEY` 철자도 본다 |
+| 결정트리가 하나뿐이다 | 정상이다 | 휠에는 형식 견본 1개만 들어갑니다. 35개는 이 저장소의 `flows/` 를 받아 `KCSC_FLOWS_DIR` 로 가리키십시오 |
 
 ---
 
@@ -86,7 +195,6 @@ KCSC_API_KEY=발급받은_키 python -m kcsc_mcp
 | `design_flows()` | 쓸 수 있는 트리 목록 (부재·단면·**설계법**·검증상태) |
 | `design_map()` | ★트리 **이음 지도** — 어디로 이어지고 **무엇이 아직 없는지** |
 | `design_flow(member, shape, method)` | 설계 흐름 + **각 단계의 근거 조항 원문을 함께 조회** |
-| `design_sheet(member, shape, method)` | **빈** 단면검토 엑셀 생성 → 파일 경로 |
 | `design_validate(tree_yaml \| path)` | 트리 검사 — **근거 조항이 실재하는지 API 로 확인** |
 | `design_template(member, shape, method)` | 새 부재용 YAML 뼈대 |
 | `design_stamp(path \| all_confirmed)` | 확정 트리에 **확정 시점 기록**(`검증일`·`검증기준`) — 기준이 개정되면 검사가 "구판으로 확정된 트리"를 잡는다 |
@@ -279,7 +387,7 @@ kcsc_formula('KDS 14 31 10', '4.2.3')
 | 변수 | 기본값 | 뜻 |
 | --- | --- | --- |
 | `KCSC_API_KEY` | (필수) | KCSC OpenAPI 인증키 |
-| `KCSC_HOME` | `~/.kcsc-mcp` | 캐시·결정트리·엑셀이 들어가는 곳 |
+| `KCSC_HOME` | `~/.kcsc-mcp` | 캐시·결정트리가 들어가는 곳 |
 | `KCSC_FLOWS_DIR` | `~/.kcsc-mcp/flows` | 결정트리 폴더만 따로 지정 |
 | `KCSC_INSECURE` | `0` | TLS 검증 우회 (아래 참고) |
 | `KCSC_TIMEOUT` | `90` | 응답 대기(초) |
