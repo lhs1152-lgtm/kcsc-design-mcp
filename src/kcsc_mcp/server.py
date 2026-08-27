@@ -185,9 +185,13 @@ def kcsc_read(code: str, section: str = "", code_type: str = "", max_chars: int 
         its = docmod.section_items(d, sec)
         if not its:
             avail = ", ".join(r["no"] for r in docmod.outline(d, depth=2)[:20])
+            # ★못 찾았다고 답할 때야말로 **어느 종류로 찾았는지**를 밝혀야 한다.
+            #   `note` 는 코드가 여러 종류에 겹칠 때 "KDS 로 읽었다 · 다른 후보는 KCS…" 를 담는다.
+            #   그것을 여기서 빠뜨리면, 실은 **다른 종류에 있는 절**인데도 "없다" 로만 들린다.
             return (f"{d.get('codeType')} {d.get('code')} 에 `{sec}` 절이 없습니다.\n"
                     f"있는 절(2단계까지): {avail}\n"
-                    "`kcsc_outline` 로 목차를 확인해 주세요.")
+                    + (note + "\n" if note else "")
+                    + "`kcsc_outline` 로 목차를 확인해 주세요.")
     else:
         its = docmod.items(d)
 
@@ -247,8 +251,10 @@ def kcsc_formula(code: str, section: str, code_type: str = "", max_images: int =
         return [_err(e)]
     its = docmod.section_items(d, sec)
     if not its:
+        # 못 찾았을 때도 **어느 종류로 찾았는지** 밝힌다 — `kcsc_read` 와 같은 이유다.
         return [f"{d.get('codeType')} {d.get('code')} 에 `{sec}` 절이 없습니다. "
-                "`kcsc_outline` 로 목차를 확인해 주세요."]
+                "`kcsc_outline` 로 목차를 확인해 주세요."
+                + ("\n\n" + note if note else "")]
 
     images: list = []
     body, _ = docmod.render_items(its, images)
@@ -334,7 +340,8 @@ def kcsc_grep(code: str, keyword: str, code_type: str = "", limit: int = 20) -> 
         total += len(found)
         title = f"### {d.get('codeType')} {d.get('code')} — {d.get('name')}"
         if not found:
-            blocks.append(f"{title}\n(없음)")
+            # 못 찾았을 때도 종류 안내를 붙인다 — 찾던 낱말이 실은 **다른 종류**에 있을 수 있다.
+            blocks.append(f"{title}\n(없음)" + ("\n" + note if note else ""))
             continue
         lines = [title]
         if note:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kcsc-design-mcp"
-version = "0.3.0"
+version = "0.3.1"
 description = "국가건설기준(KDS·KCS) 원문 조회와 설계 결정트리를 AI 대화창에서 바로 쓰는 MCP 서버"
 readme = "README.md"
 requires-python = ">=3.10"
